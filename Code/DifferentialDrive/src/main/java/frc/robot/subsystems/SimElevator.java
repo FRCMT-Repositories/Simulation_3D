@@ -11,87 +11,106 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class SimElevator extends SubsystemBase {
-    private PIDController elevatorPID = new PIDController(1.5, 0, 0.0);
 
-    private final static double Encoder_Zero = 0;  /* Valores reais do motor */
-    private static double Encoder_Up = 1000;
+    // =========================================================
+    // CONFIGURAÇÕES
+    // =========================================================
 
-    private final static double Elevator_Zero = 0;  /* Valores reais da distancia com base no CAD */
-    private final static double Elevator_Up = 0.4;
-    private static double CurrentPosition = 0;
-    private static double OutPosition = 0;
-    private static double SetPosition = 0;
-    
-    public SimElevator(double realUp, double kPUp){
-        Encoder_Up = realUp;
-        elevatorPID.setP(kPUp);
-    }
+    // Limites físicos do elevador no CAD, em metros.
+    private static final double ELEVATOR_ZERO = 0.0;
+    private static final double ELEVATOR_UP = 0.40;
 
-    @Override
-    public void periodic() {
-        OutPosition = elevatorPID.calculate(getRawPosition(), SetPosition);
-        CurrentPosition += OutPosition * 0.02;
-        CurrentPosition = MathUtil.clamp(getRawPosition(), Elevator_Zero, Elevator_Up);
-        
-        Logger.recordOutput("SubSystemSim/Elevator", new Pose3d[] { new Pose3d(
-            0.0, 0.0, getRawPosition(), new Rotation3d(0.0, 0, 0))});
-    }
-    
-    /**
-    * @return um valor linear dentro do range estabelecido.
-    *
-    * @param x Variavel de leitura.
-    * @param in_min Valor minimo de entrada da variavel x.
-    * @param in_max Valor maximo de entrada da variavel x.
-    * @param out_min Valor de saida minimo permitido (PODE TER B.Ozinhos).
-    * @param out_max Valor de saida maximo permitido (PODE TER B.Ozinhos).
-    */
-    public static double map(double x, double in_min, double in_max, double out_min, double out_max) {
-        double result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-        return result;
-    }
+    // Posições equivalentes do encoder real.
+    private static final double ENCODER_ZERO = 0.0;
+    private static double encoderUp = 1000.0;
 
-    /**
-    * @return null
-    *
-    * @param kP Define o ganho proporcional do sistema elevador.
-    */
-    public void config(double kP) {
+    // =========================================================
+    // CONTROLE
+    // =========================================================
+
+    private final PIDController elevatorPID = new PIDController(1.5, 0.0, 0.0);
+
+    // Posições internas da simulação, em metros.
+    private static double currentPosition = 0.0;
+    private static double setPosition = 0.0;
+
+    // =========================================================
+    // CONSTRUTOR
+    // =========================================================
+
+    public SimElevator(double realUp, double kP) {
+        encoderUp = realUp;
         elevatorPID.setP(kP);
     }
 
-    /**
-    * @return Posição do elevador com base no CAD
-    *
-    * @param null
-    */
-    public static double getRawPosition() {
-        return CurrentPosition;
+    // =========================================================
+    // PERIODIC
+    // =========================================================
+
+    @Override
+    public void periodic() {
+        updatePosition();
+        updateVisualization();
     }
 
-    /**
-    * @return Posição do elevador com base no encoder Real
-    *
-    * @param null
-    */
-    public static double getRealPosition() {
-        return map(CurrentPosition, Elevator_Zero, Elevator_Up, Encoder_Zero, Encoder_Up);
-    }
+    // =========================================================
+    // POSIÇÃO
+    // =========================================================
 
     /**
-    * @return null
-    *
-    * @param position Define o setpoint de posição do elevador.
-    * @param kP Define o ganho proporcional do sistema elevador.
-    */
+     * Define a posição desejada do elevador usando a escala do encoder.
+     */
     public void setPosition(double position, double kP) {
-        config(kP);
-        SetPosition = map(position, Encoder_Zero, Encoder_Up, Elevator_Zero, Elevator_Up);
+        elevatorPID.setP(kP);
+        setPosition = map(position, ENCODER_ZERO, encoderUp, ELEVATOR_ZERO, ELEVATOR_UP);
     }
 
+    /**
+     * Retorna a posição física do elevador no CAD, em metros.
+     */
+    public static double getRawPosition() {
+        return currentPosition;
+    }
 
-    public Command CMDsetPosition(double position, double kP){
+    /**
+     * Retorna a posição do elevador convertida para a escala do encoder.
+     */
+    public static double getRealPosition() {
+        return map(currentPosition, ELEVATOR_ZERO, ELEVATOR_UP, ENCODER_ZERO, encoderUp);
+    }
+
+    private void updatePosition() {
+        double output = elevatorPID.calculate(currentPosition, setPosition);
+
+        currentPosition += output * 0.02;
+        currentPosition = MathUtil.clamp(currentPosition, ELEVATOR_ZERO, ELEVATOR_UP);
+    }
+
+    // =========================================================
+    // COMMANDS
+    // =========================================================
+
+    public Command CMDsetPosition(double position, double kP) {
         return Commands.runOnce(() -> setPosition(position, kP));
     }
 
+    // =========================================================
+    // VISUALIZAÇÃO
+    // =========================================================
+
+    private void updateVisualization() {
+        Logger.recordOutput("SubSystemSim/Elevator", new Pose3d[] {
+                new Pose3d(0.0, 0.0, currentPosition, new Rotation3d()) });
+    }
+
+    // =========================================================
+    // UTILIDADES
+    // =========================================================
+
+    /**
+     * Converte linearmente um valor de uma escala para outra.
+     */
+    private static double map(double value, double inputMin, double inputMax, double outputMin, double outputMax) {
+        return (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin) + outputMin;
+    }
 }

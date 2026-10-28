@@ -134,7 +134,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         }
     }
 
-
     public void zeroGyroPigeon() {
         this.getPigeon2().setYaw(0);
     }

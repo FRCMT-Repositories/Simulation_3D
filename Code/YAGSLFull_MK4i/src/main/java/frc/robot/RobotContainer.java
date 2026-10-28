@@ -10,6 +10,8 @@ import java.util.function.BooleanSupplier;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -26,8 +28,8 @@ import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import swervelib.SwerveInputStream;
 
 public class RobotContainer {
-  final CommandXboxController Cmdriver = new CommandXboxController(0);
 
+  final CommandXboxController Cmdriver = new CommandXboxController(0);
   public final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve/MK4i"));
 
   private final SendableChooser<Command> autoChooser;
@@ -55,6 +57,7 @@ public class RobotContainer {
     Command driveMode = drivebase.driveFieldOriented(driveAngularVelocity);
 
     drivebase.setDefaultCommand(driveMode);
+    /*
     Cmdriver.start().onTrue((Commands.runOnce(drivebase::zeroGyro)));
 
     Cmdriver.a().onTrue(Commands.runOnce(() -> mSimIntake.setPosition(20, 3)));
@@ -76,6 +79,11 @@ public class RobotContainer {
     Cmdriver.b().onTrue(Commands.runOnce(() -> mSimHand.setVelocity(0)));
     Cmdriver.back().onTrue(Commands.runOnce(() -> mSimHand.setAngle(0, 3)));
     Cmdriver.back().onTrue(Commands.runOnce(() -> mSimHand.setVelocity(0)));
+    */
+
+    Cmdriver.a().whileTrue(followPath("Aula"));
+
+    Cmdriver.y().whileTrue(drivebase.driveToPose(new Pose2d(4,4, new Rotation2d())));
   }
 
   public Command getAutonomousCommand() {
