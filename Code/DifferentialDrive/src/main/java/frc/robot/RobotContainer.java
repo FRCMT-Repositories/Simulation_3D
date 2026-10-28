@@ -82,8 +82,8 @@ public class RobotContainer {
     driver.back().onTrue(Commands.runOnce(() -> mSimHand.setAngle(0, 3)));
 
     coletar_Ground();
-    autoHand();
-    deposit_Pose();
+    // autoHand();
+    // deposit_Pose();
 
     driver.y().onTrue(tank.depositFuelCommand());
 
@@ -93,44 +93,7 @@ public class RobotContainer {
     driver.leftBumper().whileTrue(mSimIntake.CMDintakeOn().onlyIf(() -> !tank.isFuelInsideRobot()));
     driver.leftBumper().whileFalse(mSimIntake.CMDintakeOff());
   }
-
-  void autoHand() {
-    BooleanSupplier gamePieceOk = () -> tank.isFuelInsideRobot() && !tank.isHandCollected()
-        && Math.abs(SimElevator.getRealPosition()) > 10;
-
-    onCommandCondition(gamePieceOk, Commands.sequence(
-        mSimElevator.CMDsetPosition(400, 5),
-        Commands.waitUntil(() -> Math.abs(SimElevator.getRealPosition() - 400) < 10),
-        Commands.runOnce(() -> mSimHand.setAngle(0, 3)),
-        Commands.waitUntil(() -> Math.abs(SimHand.getRealAngle()) < 5),
-        mSimElevator.CMDsetPosition(0, 5)));
-  }
-
-  void deposit_Pose() {
-    BooleanSupplier isPoseProcess = () -> tank.getPose().getX() >= 5.5 && tank.getPose().getX() <= 6.5
-        && tank.getPose().getY() <= 1.1
-        && driverget.getRightBumperButton();
-
-    BooleanSupplier isPoseNet = () -> tank.getPose().getX() >= 6.5 && tank.getPose().getX() <= 8
-        && driverget.getRightBumperButton();
-
-    onCommandCondition(isPoseNet, Commands.sequence(
-        mSimElevator.CMDsetPosition(400, 5),
-        Commands.waitUntil(() -> Math.abs(SimElevator.getRealPosition() - 400) < 5),
-        Commands.runOnce(() -> mSimHand.setAngle(-170, 3)),
-        Commands.waitUntil(() -> Math.abs(SimHand.getRealAngle() - (-170)) < 5),
-        deposit()));
-
-    onCommandCondition(isPoseProcess, Commands.sequence(
-        mSimElevator.CMDsetPosition(400, 5),
-        Commands.waitUntil(() -> Math.abs(SimElevator.getRealPosition() - 400) < 5),
-        Commands.runOnce(() -> mSimHand.setAngle(-45, 3)),
-        Commands.waitUntil(() -> Math.abs(SimHand.getRealAngle() - (-45)) < 5),
-        mSimElevator.CMDsetPosition(0, 5),
-        Commands.waitUntil(() -> Math.abs(SimElevator.getRealPosition() - 0) < 5),
-        deposit()));
-  }
-
+  
   public Command getAutonomousCommand() {
     return autoChooser.getSelected();
   }
